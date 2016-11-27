@@ -3,21 +3,24 @@ This function should be sourced in the following way
 
 python create_base_submission.py
 arg1 = whether scaling shoud be implemented
-
+arg2 = the type of model
+    default is the base submission rf with 100 trees
+    basecv = grid-search optimised rf
 '''
 
 import sys
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.metrics import accuracy_score
 
 from outputting_functions import *
 from feature_engineering import *
+from models import *
 
 log = sys.argv[1]
+model = sys.argv[2]
 
 print('Reading in data..')
 
@@ -44,8 +47,7 @@ X_train, X_test, X_valid = data_formatting(train, test, valid, numeric_vars, log
                
 print('Training model..')
 
-clf = RandomForestRegressor(n_estimators = 100, random_state=2)
-clf.fit(X_train, y_train)
+clf = train_model(X_train, y_train, model)
 
 y_pred = clf.predict(X_test)
 y_pred_holdout = clf.predict(X_valid)
