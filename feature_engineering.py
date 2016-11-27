@@ -33,7 +33,7 @@ def year_diff(x, y):
     
         return x - y
     
-def data_formatting(train, test, numeric_vars, log):
+def data_formatting(train, test, valid, numeric_vars, log):
     
     import pandas as pd
     import numpy as np
@@ -42,8 +42,9 @@ def data_formatting(train, test, numeric_vars, log):
     
     train['data'] = 'train'
     test['data'] = 'test'
+    valid['data'] = 'valid'
     
-    ttl_df = pd.concat([train, test], axis = 0)
+    ttl_df = pd.concat([train, test, valid], axis = 0)
     
     print('Recoding data errors..')
     
@@ -105,16 +106,20 @@ def data_formatting(train, test, numeric_vars, log):
     X_ttl = pd.concat([ttl_numeric, ttl_cat, data], axis = 1)
     X_train = X_ttl.loc[X_ttl.data == 'train', :]
     X_test = X_ttl.loc[X_ttl.data == 'test', :]
+    X_valid = X_ttl.loc[X_ttl.data == 'valid', :]
     
     X_train = X_train.drop('data', 1)
     X_test = X_test.drop('data', 1)
+    X_valid = X_valid.drop('data', 1)
     
     # The recode of missing variables wasn't working, so had to find this hack :D
     
     X_train = X_train.replace(np.nan, {column: 0 for column in X_train.columns})
     X_test = X_test.replace(np.nan, {column: 0 for column in X_test.columns})
+    X_valid = X_valid.replace(np.nan, {column: 0 for column in X_valid.columns})
     
     X_train = X_train.as_matrix()
     X_test = X_test.as_matrix()
+    X_valid = X_valid.as_matrix()
     
-    return(X_train, X_test)
+    return(X_train, X_test, X_valid)
