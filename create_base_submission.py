@@ -22,25 +22,20 @@ print('Reading in data..')
 test = pd.read_csv('Data/test.csv')
 train = pd.read_csv('Data/train.csv')
 
-test['SalePrice'] = ''
+test['SalePrice'] = np.nan
 y_train, y_test = train['SalePrice'].values, test['SalePrice'].values
 
 if log:
     y_train = np.log1p(y_train)
     print('Taking the log of the outcome variable')
 
-dropping = ['SalePrice', 'Id']
-
-X_train = train.drop(dropping, 1)
-X_test = test.drop(dropping, 1)
-
-numeric_vars = ['LotFrontage', 'LotArea', 'BsmtFinSF1', 'BsmtUnfSF', 'TotalBsmtSF',
+numeric_vars = ['LotFrontage', 'LotArea', 'BsmtFinSF1', 'BsmtFinSF2', 'BsmtUnfSF', 'TotalBsmtSF',
                '1stFlrSF', '2ndFlrSF', 'LowQualFinSF', 'GrLivArea', 'BsmtFullBath', 'BsmtHalfBath',
                'FullBath', 'HalfBath', 'BedroomAbvGr', 'KitchenAbvGr', 'TotRmsAbvGrd', 'Fireplaces', 'GarageCars',
                'GarageArea', 'WoodDeckSF', 'OpenPorchSF', 'EnclosedPorch', '3SsnPorch',
-               'ScreenPorch', 'PoolArea', 'MiscVal']
+               'ScreenPorch', 'PoolArea', 'MiscVal', 'YrSold', 'YearRemodAdd', 'YearBuilt']
 
-X_train, X_test = data_formatting(X_train, X_test, numeric_vars, log)               
+X_train, X_test = data_formatting(train, test, numeric_vars, log)               
                
 print('Training model..')
 
