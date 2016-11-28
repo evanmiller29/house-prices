@@ -21,6 +21,15 @@ def train_model(X_train, y_train, model):
         grid_search.fit(X_train, y_train)
         print("done in %0.3fs" % (time() - t0))
         return(grid_search)
+
+    if model == 'lassocv':
+        
+        from sklearn.linear_model import LassoCV
+        t0 = time()
+        clf = LassoCV(alphas = [1, 0.1, 0.001, 0.0005])
+        clf.fit(X_train, y_train)
+        print("done in %0.3fs" % (time() - t0))
+        return(clf)
         
     else:
         from sklearn.ensemble import RandomForestRegressor
