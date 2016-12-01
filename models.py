@@ -2,6 +2,15 @@ def train_model(X_train, y_train, model):
 
     from time import time
     
+    if model == 'rf':
+        from sklearn.ensemble import RandomForestRegressor
+        clf = RandomForestRegressor(n_estimators = 100, random_state=2)
+        t0 = time()
+        clf.fit(X_train, y_train)
+        print("done in %0.3fs" % (time() - t0))
+        
+        return(clf)
+    
     if model == 'rfcv':
         
         long_run = True
@@ -22,7 +31,6 @@ def train_model(X_train, y_train, model):
         if long_run:
             clf = GridSearchCV(clf, param_grid=param_grid)
             clf.fit(X_train, y_train)
-            print (clf.grid_scores_)
             print('best params')
             print (clf.best_params_)
             print('best score')
@@ -70,11 +78,22 @@ def train_model(X_train, y_train, model):
         
         from sklearn.linear_model import LassoCV
         t0 = time()
-        clf = LassoCV(alphas = [1, 0.1, 0.001, 0.0005])
+        clf = LassoCV(alphas = [5, 1, 0.1, 0.001, 0.0005], max_iter = 5000)
+        print('Fitting CV lasso model..')
         clf.fit(X_train, y_train)
         print("done in %0.3fs" % (time() - t0))
         return(clf)
-            
+    
+    if model == 'svm_linear':
+        
+        import numpy as np
+        from sklearn.svm import SVR
+        
+        clf = SVR(kernel='linear')
+        clf.fit(X_train, y_train)
+        
+        return(clf)
+        
     if model == 'xgboost':
         
         import xgboost as xgb
@@ -108,12 +127,3 @@ def train_model(X_train, y_train, model):
         gsearch.fit(X_train, y_train)
                 
         return(gsearch)
-        
-    else:
-        from sklearn.ensemble import RandomForestRegressor
-        clf = RandomForestRegressor(n_estimators = 100, random_state=2)
-        t0 = time()
-        clf.fit(X_train, y_train)
-        print("done in %0.3fs" % (time() - t0))
-        
-        return(clf)
