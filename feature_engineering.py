@@ -33,10 +33,11 @@ def year_diff(x, y):
     
         return x - y
     
-def data_formatting(train, test, valid, numeric_vars, log):
+def data_formatting(train, test, valid, numeric_vars, log, output):
     
     import pandas as pd
     import numpy as np
+    import feather
     
     recent_threshold = 5
     
@@ -93,8 +94,18 @@ def data_formatting(train, test, valid, numeric_vars, log):
     dropping = ['SalePrice', 'Id']
     
     ttl_cat = ttl_cat.drop(dropping, axis = 1)
-    
     data = ttl_cat['data']
+    
+    if output:
+        ttl_numeric = ttl_numeric.reset_index()
+        ttl_cat = ttl_cat.reset_index()
+        
+        X_ttl = pd.concat([ttl_numeric, ttl_cat], axis = 1)
+        X_ttl = X_ttl.reset_index()
+        print('Outputting transformed datasets to feather files..')
+        X_ttl = X_ttl.drop('index', axis = 1)
+        feather.write_dataframe(X_ttl, 'X_ttl.feather')       
+    
     ttl_cat = ttl_cat.drop('data', 1)       
     ttl_cat = pd.get_dummies(ttl_cat)
     
@@ -104,6 +115,7 @@ def data_formatting(train, test, valid, numeric_vars, log):
     ttl_cat = ttl_cat.reset_index()
     
     X_ttl = pd.concat([ttl_numeric, ttl_cat, data], axis = 1)
+        
     X_train = X_ttl.loc[X_ttl.data == 'train', :]
     X_test = X_ttl.loc[X_ttl.data == 'test', :]
     X_valid = X_ttl.loc[X_ttl.data == 'valid', :]

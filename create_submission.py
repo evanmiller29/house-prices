@@ -9,6 +9,7 @@ arg2 = the type of model
     lassocv = a grid search optimised lasso regression
     xgboost = a basic xgboost model
     svm = don't use currently as there is something odd happening with the scoring
+arg3 = whether you'd like to output a feather (hahahah)
 '''
 
 import sys
@@ -24,6 +25,7 @@ from models import *
 
 log = sys.argv[1]
 model = sys.argv[2]
+output = sys.argv[3]
 
 print('Reading in data..')
 
@@ -46,8 +48,8 @@ numeric_vars = ['LotFrontage', 'LotArea', 'BsmtFinSF1', 'BsmtFinSF2', 'BsmtUnfSF
 print('Creating holdout set (25%) from the training set..')
 
 train, valid, y_train, y_valid = train_test_split(train, y_train, test_size=0.25, random_state=0)             
-X_train, X_test, X_valid = data_formatting(train, test, valid, numeric_vars, log)               
-               
+X_train, X_test, X_valid = data_formatting(train, test, valid, numeric_vars, log, output)               
+
 print('Training model..')
 
 clf = train_model(X_train, y_train, model)
