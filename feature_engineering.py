@@ -80,9 +80,22 @@ def data_formatting(train, test, valid, numeric_vars, log, output):
     ttl_numeric['YearRemodAdd'] = ttl_numeric.apply(lambda x: second_recode(x['YearRemodAdd'], x['Remodelled']), axis = 1)
     ttl_numeric['YearsSinceRemodel'] = ttl_numeric.apply(lambda x: year_diff(x['YrSold'], x['YearRemodAdd']), axis=1)  
     ttl_numeric['recent_remodel'] = ttl_numeric.apply(lambda x: recent_remodel(x['YearsSinceRemodel'], recent_threshold), axis=1)
-        
+            
     ttl_cat = ttl_df.drop(numeric_vars, 1)
     ttl_cat = ttl_cat.drop('AreaAverage', 1)
+    
+    print('Generating area features..')
+    
+    area_cols = ['LotFrontage', 'LotArea', 'MasVnrArea', 'BsmtFinSF1', 'BsmtFinSF2', 'BsmtUnfSF',
+                 'TotalBsmtSF', '1stFlrSF', '2ndFlrSF', 'GrLivArea', 'GarageArea', 'WoodDeckSF', 
+                 'OpenPorchSF', 'EnclosedPorch', '3SsnPorch', 'ScreenPorch', 'LowQualFinSF', 'PoolArea' ]
+    
+    ttl_numeric["TotalArea"] = ttl_numeric[area_cols].sum(axis=1)
+
+    ttl_numeric["TotalArea1st2nd"] = ttl_numeric["1stFlrSF"] + ttl_numeric["2ndFlrSF"]
+
+    ttl_numeric["Age"] = 2010 - ttl_numeric["YearBuilt"]
+    ttl_numeric["TimeSinceSold"] = 2010 - ttl_numeric["YrSold"]
     
     print('Generating new categorical features..')
     
@@ -90,7 +103,9 @@ def data_formatting(train, test, valid, numeric_vars, log, output):
     ttl_cat['Mult_conds'] = ttl_cat.apply(lambda x: unique_options(x['Condition1'], x['Condition2']), axis = 1)   
     ttl_cat['Exterior2nd'] = ttl_cat.apply(lambda x: second_recode(x['Exterior2nd'], x['Mult_Ext']), axis = 1)
     ttl_cat['Condition2'] = ttl_cat.apply(lambda x: second_recode(x['Condition2'], x['Mult_conds']), axis = 1)
-      
+    ttl_cat["SeasonSold"] = ttl_cat["MoSold"].map({12:0, 1:0, 2:0, 3:1, 4:1, 5:1, 
+                                                  6:2, 7:2, 8:2, 9:3, 10:3, 11:3}).astype(int)
+    
     dropping = ['SalePrice', 'Id']
     
     ttl_cat = ttl_cat.drop(dropping, axis = 1)

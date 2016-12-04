@@ -43,7 +43,7 @@ numeric_vars = ['LotFrontage', 'LotArea', 'BsmtFinSF1', 'BsmtFinSF2', 'BsmtUnfSF
                '1stFlrSF', '2ndFlrSF', 'LowQualFinSF', 'GrLivArea', 'BsmtFullBath', 'BsmtHalfBath',
                'FullBath', 'HalfBath', 'BedroomAbvGr', 'KitchenAbvGr', 'TotRmsAbvGrd', 'Fireplaces', 'GarageCars',
                'GarageArea', 'WoodDeckSF', 'OpenPorchSF', 'EnclosedPorch', '3SsnPorch',
-               'ScreenPorch', 'PoolArea', 'MiscVal', 'YrSold', 'YearRemodAdd', 'YearBuilt']
+               'ScreenPorch', 'PoolArea', 'MiscVal', 'YrSold', 'YearRemodAdd', 'YearBuilt', 'MasVnrArea']
 
 print('Creating holdout set (25%) from the training set..')
 
