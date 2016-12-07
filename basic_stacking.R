@@ -44,11 +44,10 @@ unique_data_types <- unique(data_types)
 DATA_ATTR_TYPES <- lapply(unique_data_types,function(x){ names(data_types[data_types == x])})
 names(DATA_ATTR_TYPES) <- unique_data_types
 
-
-# create folds for training
 set.seed(13)
 data_folds <- createFolds(train.raw$SalePrice, k=5)
 
+# Feature Set 1 - Boruta Confirmed and tentative Attributes
 prepL0FeatureSet1 <- function(df) {
   id <- df$Id
   if (class(df$SalePrice) != "NULL") {
@@ -129,11 +128,11 @@ trainOneFold <- function(this_fold,feature_set) {
   
   
   set.seed(825)
-  fitted_mdl <- do.call(train,
+  fitted_mdl <- do.call(caret::train,
                         c(list(x=train.data$predictors,y=train.data$y),
                           CARET.TRAIN.PARMS,
                           MODEL.SPECIFIC.PARMS,
-                            CARET.TRAIN.OTHER.PARMS))
+                          CARET.TRAIN.OTHER.PARMS))
   
   yhat <- predict(fitted_mdl,newdata = cv.data$predictors,type = "raw")
   
@@ -179,7 +178,7 @@ CARET.TRAIN.OTHER.PARMS <- list(trControl=CARET.TRAIN.CTRL,
 gbm_set <- llply(data_folds,trainOneFold,L0FeatureSet1)
 
 # final model fit
-gbm_mdl <- do.call(train,
+gbm_mdl <- do.call(caret::train,
                    c(list(x=L0FeatureSet1$train$predictors,y=L0FeatureSet1$train$y),
                      CARET.TRAIN.PARMS,
                      MODEL.SPECIFIC.PARMS,
@@ -191,27 +190,23 @@ cv_yhat <- do.call(c,lapply(gbm_set,function(x){x$predictions$yhat}))
 rmse(cv_y,cv_yhat)
 cat("Average CV rmse:",mean(do.call(c,lapply(gbm_set,function(x){x$score}))))
 
-
 # create test submission.
 # A prediction is made by averaging the predictions made by using the models
 # fitted for each fold.
 
 test_gbm_yhat <- predict(gbm_mdl,newdata = L0FeatureSet1$test$predictors,type = "raw")
 gbm_submission <- cbind(Id=L0FeatureSet1$test$id,SalePrice=exp(test_gbm_yhat))
-write.csv(gbm_submission,file="gbm_sumbission.csv",row.names=FALSE)
+write.csv(gbm_submission,file="Model outputs/gbm_sumbission.csv",row.names=FALSE)
 
-# set caret training parameters for xgboost
+gbm_submission <- cbind(Id=L0FeatureSet1$test$id,SalePrice=test_gbm_yhat)
+write.csv(gbm_submission,file="Model outputs/gbm_logged.csv",row.names=FALSE)
 
-CARET.TRAIN.PARMS <- list(method="xgbTree")   
+# set caret training parameters for ranger model
+CARET.TRAIN.PARMS <- list(method="ranger")   
 
-CARET.TUNE.GRID <-  expand.grid(nrounds=800, 
-                                max_depth=10, 
-                                eta=0.03, 
-                                gamma=0.1, 
-                                colsample_bytree=0.4, 
-                                min_child_weight=1)
+CARET.TUNE.GRID <-  expand.grid(mtry=2*as.integer(sqrt(ncol(L0FeatureSet1$train$predictors))))
 
-MODEL.SPECIFIC.PARMS <- list(verbose=0) #NULL # Other model specific parameters
+MODEL.SPECIFIC.PARMS <- list(verbose=0,num.trees=500) #NULL # Other model specific parameters
 
 # model specific training parameter
 CARET.TRAIN.CTRL <- trainControl(method="none",
@@ -223,17 +218,91 @@ CARET.TRAIN.OTHER.PARMS <- list(trControl=CARET.TRAIN.CTRL,
                                 metric="RMSE")
 
 # generate Level 1 features
-xgb_set <- llply(data_folds,trainOneFold,L0FeatureSet2)
+rngr_set <- llply(data_folds,trainOneFold,L0FeatureSet1)
 
 # final model fit
-xgb_mdl <- do.call(train,
-                   c(list(x=L0FeatureSet2$train$predictors,y=L0FeatureSet2$train$y),
-                     CARET.TRAIN.PARMS,
-                     MODEL.SPECIFIC.PARMS,
-                     CARET.TRAIN.OTHER.PARMS))
+rngr_mdl <- do.call(caret::train,
+                    c(list(x=L0FeatureSet1$train$predictors,y=L0FeatureSet1$train$y),
+                      CARET.TRAIN.PARMS,
+                      MODEL.SPECIFIC.PARMS,
+                      CARET.TRAIN.OTHER.PARMS))
 
 # CV Error Estimate
-cv_y <- do.call(c,lapply(xgb_set,function(x){x$predictions$y}))
-cv_yhat <- do.call(c,lapply(xgb_set,function(x){x$predictions$yhat}))
+cv_y <- do.call(c,lapply(rngr_set,function(x){x$predictions$y}))
+cv_yhat <- do.call(c,lapply(rngr_set,function(x){x$predictions$yhat}))
 rmse(cv_y,cv_yhat)
-cat("Average CV rmse:",mean(do.call(c,lapply(xgb_set,function(x){x$score}))))
+cat("Average CV rmse:",mean(do.call(c,lapply(rngr_set,function(x){x$score}))))
+
+# create test submission.
+# A prediction is made by averaging the predictions made by using the models
+# fitted for each fold.
+
+test_rngr_yhat <- predict(rngr_mdl,newdata = L0FeatureSet1$test$predictors,type = "raw")
+rngr_submission <- cbind(Id=L0FeatureSet1$test$id,SalePrice=exp(test_rngr_yhat))
+
+write.csv(rngr_submission,file="Model outputs/rngr_sumbission.csv",row.names=FALSE)
+
+rngr_submission <- cbind(Id=L0FeatureSet1$test$id,SalePrice=test_rngr_yhat)
+write.csv(rngr_submission,file="Model outputs/rngr_logged.csv",row.names=FALSE)
+
+## Level 1 Model Training
+
+### Create predictions For Level 1 Model
+
+# gbm_yhat <- do.call(c,lapply(gbm_set,function(x){x$predictions$yhat}))
+# rngr_yhat <- do.call(c,lapply(rngr_set,function(x){x$predictions$yhat}))
+
+gbm_yhat <- read.csv('Model outputs/gbm_logged.csv', header = TRUE)$SalePrice
+rngr_yhat <- read.csv('Model outputs/rngr_logged.csv', header = TRUE)$SalePrice
+xgboost_yhat <- read.csv('Model outputs/xgboost_logged.csv', header = TRUE)$SalePrice
+lasso_yhat <- read.csv('Model outputs/lassocv_logged.csv', header = TRUE)$SalePrice
+
+# create Feature Set
+L1FeatureSet <- list()
+
+L1FeatureSet$train$id <- do.call(c,lapply(gbm_set,function(x){x$predictions$ID}))
+L1FeatureSet$train$y <- do.call(c,lapply(gbm_set,function(x){x$predictions$y}))
+predictors <- data.frame(gbm_yhat,rngr_yhat, xgboost_yhat, lasso_yhat)
+predictors_rank <- t(apply(predictors,1,rank))
+colnames(predictors_rank) <- paste0("rank_",names(predictors))
+L1FeatureSet$train$predictors <- predictors #cbind(predictors,predictors_rank)
+
+L1FeatureSet$test$id <- gbm_submission[,"Id"]
+L1FeatureSet$test$predictors <- data.frame(gbm_yhat=gbm_yhat,
+                                           rngr_yhat=rngr_yhat,
+                                           xgboost_yhat = xgboost_yhat,
+                                           lasso_yhat = lasso_yhat)
+
+# set caret training parameters for overarching nnet
+CARET.TRAIN.PARMS <- list(method="nnet") 
+
+CARET.TUNE.GRID <-  NULL  # NULL provides model specific default tuning parameters
+
+# model specific training parameter
+CARET.TRAIN.CTRL <- trainControl(method="repeatedcv",
+                                 number=5,
+                                 repeats=1,
+                                 verboseIter=FALSE)
+
+CARET.TRAIN.OTHER.PARMS <- list(trControl=CARET.TRAIN.CTRL,
+                                maximize=FALSE,
+                                tuneGrid=CARET.TUNE.GRID,
+                                tuneLength=7,
+                                metric="RMSE")
+
+MODEL.SPECIFIC.PARMS <- list(verbose=FALSE,linout=TRUE,trace=FALSE) #NULL # Other model specific parameters
+
+# train the model
+set.seed(826)
+l1_nnet_mdl <- do.call(caret::train,c(list(x=L1FeatureSet$train$predictors,y=L1FeatureSet$train$y[1:1459]),
+                               CARET.TRAIN.PARMS,
+                               MODEL.SPECIFIC.PARMS,
+                               CARET.TRAIN.OTHER.PARMS))
+
+cat("Average CV rmse:",mean(l1_nnet_mdl$resample$RMSE),"\n")
+
+test_l1_nnet_yhat <- predict(l1_nnet_mdl,newdata = L1FeatureSet$test$predictors,type = "raw")
+l1_nnet_submission <- cbind(Id=L1FeatureSet$test$id,SalePrice=exp(test_l1_nnet_yhat))
+colnames(l1_nnet_submission) <- c("Id","SalePrice")
+
+write.csv(l1_nnet_submission,file="Model outputs/l1_nnet_submission.csv",row.names=FALSE)
