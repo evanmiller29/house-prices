@@ -38,6 +38,8 @@ from models import *
 
 print('Reading in data..')
 
+data_dir = 'F:/Nerdy Stuff\Kaggle/House prices'
+
 test = pd.read_csv('Data/test.csv')
 train = pd.read_csv('Data/train.csv')
 
