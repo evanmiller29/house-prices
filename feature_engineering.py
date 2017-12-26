@@ -119,7 +119,6 @@ def data_formatting(train, test, valid, numeric_vars, log, output):
         X_ttl = X_ttl.reset_index()
         print('Outputting transformed datasets to feather files..')
         X_ttl = X_ttl.drop('index', axis = 1)
-        feather.write_dataframe(X_ttl, 'X_ttl.feather')       
     
     ttl_cat = ttl_cat.drop('data', 1)       
     ttl_cat = pd.get_dummies(ttl_cat)
